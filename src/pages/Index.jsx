@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, Textarea, useDisclosure } from "@chakra-ui/react";
+import { Box, Button, Grid, Heading, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, Textarea, useDisclosure, Highlight } from "@chakra-ui/react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
 const Index = () => {
@@ -8,6 +8,7 @@ const Index = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [editIndex, setEditIndex] = useState(-1);
+  const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
@@ -58,46 +59,60 @@ const Index = () => {
     localStorage.setItem("pinnedNotes", JSON.stringify(pinnedNotes));
   }, [notes, pinnedNotes]);
 
+  const filterNotes = (note) => {
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return note.title.toLowerCase().includes(lowerCaseQuery) || note.content.toLowerCase().includes(lowerCaseQuery);
+  };
+
+  const filteredNotes = notes.filter(filterNotes);
+
   return (
     <Box p={4}>
       <Heading mb={4}>Notes App</Heading>
+      <Input placeholder="Search notes..." mb={4} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
       <Button leftIcon={<FaPlus />} onClick={onOpen} colorScheme="blue" mb={4}>
         New Note
       </Button>
       <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
-        {[...pinnedNotes, ...notes.filter((_, i) => !pinnedNotes.includes(i))].map((index) => {
+        {[...pinnedNotes, ...filteredNotes.filter((_, i) => !pinnedNotes.includes(i))].map((index) => {
           const note = notes[index];
           return (
-          <Box key={index} p={4} borderWidth={1} borderRadius="md" onClick={() => openEditModal(index)} cursor="pointer">
-            <Heading size="md" mb={2}>
-              {note.title}
-            </Heading>
-            <Text noOfLines={2}>{note.content}</Text>
-            <Button
-              size="sm"
-              colorScheme="red"
-              leftIcon={<FaTrash />}
-              mt={2}
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteNote(index);
-              }}
-            >
-              Delete
-            </Button>
-            <Button
-              size="sm"
-              colorScheme={pinnedNotes.includes(index) ? "yellow" : "gray"}
-              mt={2}
-              ml={2}
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePin(index);
-              }}
-            >
-              {pinnedNotes.includes(index) ? "Unpin" : "Pin"}
-            </Button>
-          </Box>
+            <Box key={index} p={4} borderWidth={1} borderRadius="md" onClick={() => openEditModal(index)} cursor="pointer">
+              <Heading size="md" mb={2}>
+                <Highlight query={searchQuery} styles={{ bg: "yellow.100" }}>
+                  {note.title}
+                </Highlight>
+              </Heading>
+              <Text noOfLines={2}>
+                <Highlight query={searchQuery} styles={{ bg: "yellow.100" }}>
+                  {note.content}
+                </Highlight>
+              </Text>
+              <Button
+                size="sm"
+                colorScheme="red"
+                leftIcon={<FaTrash />}
+                mt={2}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteNote(index);
+                }}
+              >
+                Delete
+              </Button>
+              <Button
+                size="sm"
+                colorScheme={pinnedNotes.includes(index) ? "yellow" : "gray"}
+                mt={2}
+                ml={2}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePin(index);
+                }}
+              >
+                {pinnedNotes.includes(index) ? "Unpin" : "Pin"}
+              </Button>
+            </Box>
           );
         })}
       </Grid>
