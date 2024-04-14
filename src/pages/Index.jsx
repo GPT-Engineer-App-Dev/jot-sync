@@ -7,8 +7,11 @@ const Index = () => {
   const [pinnedNotes, setPinnedNotes] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [tags, setTags] = useState([]);
+  const [newTag, setNewTag] = useState("");
   const [editIndex, setEditIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
@@ -20,10 +23,10 @@ const Index = () => {
 
   const saveNote = () => {
     if (editIndex === -1) {
-      setNotes([...notes, { title, content }]);
+      setNotes([...notes, { title, content, tags }]);
     } else {
       const newNotes = [...notes];
-      newNotes[editIndex] = { title, content };
+      newNotes[editIndex] = { title, content, tags };
       setNotes(newNotes);
       setPinnedNotes(pinnedNotes.filter((_, i) => i !== editIndex));
       setEditIndex(-1);
@@ -51,6 +54,7 @@ const Index = () => {
     setEditIndex(index);
     setTitle(notes[index].title);
     setContent(notes[index].content);
+    setTags(notes[index].tags || []);
     onOpen();
   };
 
@@ -61,7 +65,9 @@ const Index = () => {
 
   const filterNotes = (note) => {
     const lowerCaseQuery = searchQuery.toLowerCase();
-    return note.title.toLowerCase().includes(lowerCaseQuery) || note.content.toLowerCase().includes(lowerCaseQuery);
+    const matchesQuery = note.title.toLowerCase().includes(lowerCaseQuery) || note.content.toLowerCase().includes(lowerCaseQuery);
+    const matchesTag = selectedTag ? note.tags.includes(selectedTag) : true;
+    return matchesQuery && matchesTag;
   };
 
   const filteredNotes = notes.filter(filterNotes);
@@ -88,6 +94,23 @@ const Index = () => {
                   {note.content}
                 </Highlight>
               </Text>
+              <Box mt={2}>
+                {note.tags.map((tag) => (
+                  <Button
+                    key={tag}
+                    size="xs"
+                    colorScheme="blue"
+                    variant="outline"
+                    mr={1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTag(tag);
+                    }}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </Box>
               <Button
                 size="sm"
                 colorScheme="red"
@@ -123,7 +146,27 @@ const Index = () => {
           <ModalCloseButton />
           <ModalBody>
             <Input placeholder="Title" mb={4} value={title} onChange={(e) => setTitle(e.target.value)} />
-            <Textarea placeholder="Content" value={content} onChange={(e) => setContent(e.target.value)} />
+            <Textarea placeholder="Content" mb={4} value={content} onChange={(e) => setContent(e.target.value)} />
+            <Box mb={4}>
+              <Text mb={2}>Tags:</Text>
+              {tags.map((tag) => (
+                <Button key={tag} size="sm" colorScheme="blue" variant="outline" mr={1} onClick={() => setTags(tags.filter((t) => t !== tag))}>
+                  {tag} x
+                </Button>
+              ))}
+            </Box>
+            <Input
+              placeholder="Add new tag"
+              mb={2}
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && newTag.trim() !== "") {
+                  setTags([...tags, newTag.trim()]);
+                  setNewTag("");
+                }
+              }}
+            />
           </ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={saveNote}>
