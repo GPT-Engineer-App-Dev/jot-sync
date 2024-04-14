@@ -4,6 +4,7 @@ import { FaPlus, FaTrash } from "react-icons/fa";
 
 const Index = () => {
   const [notes, setNotes] = useState([]);
+  const [pinnedNotes, setPinnedNotes] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [editIndex, setEditIndex] = useState(-1);
@@ -11,7 +12,9 @@ const Index = () => {
 
   useEffect(() => {
     const storedNotes = JSON.parse(localStorage.getItem("notes") || "[]");
+    const storedPinnedNotes = JSON.parse(localStorage.getItem("pinnedNotes") || "[]");
     setNotes(storedNotes);
+    setPinnedNotes(storedPinnedNotes);
   }, []);
 
   const saveNote = () => {
@@ -21,6 +24,7 @@ const Index = () => {
       const newNotes = [...notes];
       newNotes[editIndex] = { title, content };
       setNotes(newNotes);
+      setPinnedNotes(pinnedNotes.filter((_, i) => i !== editIndex));
       setEditIndex(-1);
     }
     setTitle("");
@@ -33,6 +37,15 @@ const Index = () => {
     setNotes(newNotes);
   };
 
+  const togglePin = (index) => {
+    const isPinned = pinnedNotes.includes(index);
+    if (isPinned) {
+      setPinnedNotes(pinnedNotes.filter((i) => i !== index));
+    } else {
+      setPinnedNotes([index, ...pinnedNotes]);
+    }
+  };
+
   const openEditModal = (index) => {
     setEditIndex(index);
     setTitle(notes[index].title);
@@ -42,7 +55,8 @@ const Index = () => {
 
   useEffect(() => {
     localStorage.setItem("notes", JSON.stringify(notes));
-  }, [notes]);
+    localStorage.setItem("pinnedNotes", JSON.stringify(pinnedNotes));
+  }, [notes, pinnedNotes]);
 
   return (
     <Box p={4}>
@@ -51,7 +65,9 @@ const Index = () => {
         New Note
       </Button>
       <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
-        {notes.map((note, index) => (
+        {[...pinnedNotes, ...notes.filter((_, i) => !pinnedNotes.includes(i))].map((index) => {
+          const note = notes[index];
+          return (
           <Box key={index} p={4} borderWidth={1} borderRadius="md" onClick={() => openEditModal(index)} cursor="pointer">
             <Heading size="md" mb={2}>
               {note.title}
@@ -69,8 +85,21 @@ const Index = () => {
             >
               Delete
             </Button>
+            <Button
+              size="sm"
+              colorScheme={pinnedNotes.includes(index) ? "yellow" : "gray"}
+              mt={2}
+              ml={2}
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePin(index);
+              }}
+            >
+              {pinnedNotes.includes(index) ? "Unpin" : "Pin"}
+            </Button>
           </Box>
-        ))}
+          );
+        })}
       </Grid>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
